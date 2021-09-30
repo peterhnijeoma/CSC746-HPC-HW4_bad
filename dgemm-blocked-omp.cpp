@@ -23,6 +23,8 @@ void square_dgemm_blocked(int n, int block_size, double* A, double* B, double* C
  
   // declare and dynamically allocate 2D arrays
   double **AA, **BB, **CC;
+  double **AAA, **BBB, **CCC;
+
   AA = new double *[n];
   BB = new double *[n];
   CC = new double *[n];
@@ -50,23 +52,29 @@ void square_dgemm_blocked(int n, int block_size, double* A, double* B, double* C
   {
     for (jj = 0; jj < n; jj += block_size) // partition columns by block size; iterate for n/block_size blocks
     {
+      copy_matrix_block(CC, CCC, ii*block_size, jj*block_size, block_size);
       for (kk = 0; kk < n; kk += block_size)  // for each row and column of blocks
       {
+        copy_matrix_block(AA, AAA, ii*block_size, kk*block_size, block_size);
+        copy_matrix_block(BB, BBB, kk*block_size, jj*block_size, block_size);
         // basic matrix multiple applied to matrix blocks
-        for (int arow = ii; arow < ii + block_size; arow++)
-        {
-          for (int bcol = jj; bcol < jj + block_size; bcol++)
-          {
-             for (int k = kk; k < kk + block_size; k++)
-             {
-               //  std::cout << "arow is: " << arow << "; bcol is: " << bcol << "; k is: " << k << '\n';
-               //  std::cout << "CC[" << arow << "][" << bcol << "] before is: " << CC[arow][bcol] << '\n';
-                CC[arow][bcol] += AA[arow][k] * BB[k][bcol];
-               //  std::cout << "CC[" << arow << "][" << bcol << "] after is: " << CC[arow][bcol] << '\n';
-             }
-          }
-        }
+        matrix_multiply(AAA, BBB, CCC, block_size, block_size);
+      //   for (int arow = ii; arow < ii + block_size; arow++)
+      //   {
+      //     for (int bcol = jj; bcol < jj + block_size; bcol++)
+      //     {
+      //        for (int k = kk; k < kk + block_size; k++)
+      //        {
+      //          //  std::cout << "arow is: " << arow << "; bcol is: " << bcol << "; k is: " << k << '\n';
+      //          //  std::cout << "CC[" << arow << "][" << bcol << "] before is: " << CC[arow][bcol] << '\n';
+      //           CC[arow][bcol] += AA[arow][k] * BB[k][bcol];
+      //          //  std::cout << "CC[" << arow << "][" << bcol << "] after is: " << CC[arow][bcol] << '\n';
+      //        }
+      //     }
+      //   }
       }
+      // copy block product to produc matrix
+      copy_block_to_matrix(CCC, CC, ii*block_size, jj*block_size, block_size);
     }
   }
   
@@ -89,4 +97,43 @@ void square_dgemm_blocked(int n, int block_size, double* A, double* B, double* C
   delete [] AA;
   delete [] BB;
   delete [] CC;
+}
+
+void copy_matrix_block(double **S, double **D, int brl, int bcl, int bs)
+{
+  for (int row = brl; row < bs; row++)
+  {
+     for (int col = bcl; col < bs; col++)
+     {
+        D[row][col] = S[row][col];
+     }
+  }
+}
+
+void matrix_multiply(double **AA, double **BB, double **PROD, int num_rows, int num_cols)
+{
+   for (int row = 0; row < num_rows; row++)
+   {
+      for (int col = 0; col < num_cols; col++)
+      {
+         for (int k = 0; k < num_cols; k++)
+         {
+            //  std::cout << "arow is: " << arow << "; bcol is: " << bcol << "; k is: " << k << '\n';
+            //  std::cout << "CC[" << arow << "][" << bcol << "] before is: " << CC[arow][bcol] << '\n';
+            PROD[row][col] += AA[row][k] * BB[k][col];
+            //  std::cout << "CC[" << arow << "][" << bcol << "] after is: " << CC[arow][bcol] << '\n';
+         }
+      }
+   }
+}
+
+void copy_block_to_matrix(double **S, double **D, int brl, int bcl, int bs)
+{
+  for (int row = 0; row < bs; row++)
+  {
+     for (int col = 0; col < bs; col++)
+     {
+        D[brl+row][bcl+col] = S[row][col];
+     }
+  }
 }
