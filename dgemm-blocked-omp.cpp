@@ -1,3 +1,8 @@
+/* This routine performs a dgemm operation
+ *  C := C + A * B
+ * where A, B, and C are n-by-n matrices stored in column-major format.
+ * On exit, A and B maintain their input values. */
+
 #include <iostream>
 #include <string.h>
 #include <stdlib.h>
@@ -6,11 +11,42 @@
 
 const char* dgemm_desc = "Blocked dgemm, OpenMP-enabled";
 
+void copy_matrix_block(double **S, double **D, int brl, int bcl, int bs)
+{
+  for (int row = brl; row < bs; row++)
+  {
+     for (int col = bcl; col < bs; col++)
+     {
+        D[row][col] = S[row][col];
+     }
+  }
+}
 
-/* This routine performs a dgemm operation
- *  C := C + A * B
- * where A, B, and C are n-by-n matrices stored in column-major format.
- * On exit, A and B maintain their input values. */
+void matrix_multiply(double **AA, double **BB, double **PROD, int num_rows, int num_cols)
+{
+   for (int row = 0; row < num_rows; row++)
+   {
+      for (int col = 0; col < num_cols; col++)
+      {
+         for (int k = 0; k < num_cols; k++)
+         {
+            PROD[row][col] += AA[row][k] * BB[k][col];
+         }
+      }
+   }
+}
+
+void copy_block_to_matrix(double **S, double **D, int brl, int bcl, int bs)
+{
+  for (int row = 0; row < bs; row++)
+  {
+     for (int col = 0; col < bs; col++)
+     {
+        D[brl+row][bcl+col] = S[row][col];
+     }
+  }
+}
+
 void square_dgemm_blocked(int n, int block_size, double* A, double* B, double* C) 
 {
    // insert your code here: implementation of blocked matrix multiply with copy optimization and OpenMP parallelism enabled
@@ -97,43 +133,4 @@ void square_dgemm_blocked(int n, int block_size, double* A, double* B, double* C
   delete [] AA;
   delete [] BB;
   delete [] CC;
-}
-
-void copy_matrix_block(double **S, double **D, int brl, int bcl, int bs)
-{
-  for (int row = brl; row < bs; row++)
-  {
-     for (int col = bcl; col < bs; col++)
-     {
-        D[row][col] = S[row][col];
-     }
-  }
-}
-
-void matrix_multiply(double **AA, double **BB, double **PROD, int num_rows, int num_cols)
-{
-   for (int row = 0; row < num_rows; row++)
-   {
-      for (int col = 0; col < num_cols; col++)
-      {
-         for (int k = 0; k < num_cols; k++)
-         {
-            //  std::cout << "arow is: " << arow << "; bcol is: " << bcol << "; k is: " << k << '\n';
-            //  std::cout << "CC[" << arow << "][" << bcol << "] before is: " << CC[arow][bcol] << '\n';
-            PROD[row][col] += AA[row][k] * BB[k][col];
-            //  std::cout << "CC[" << arow << "][" << bcol << "] after is: " << CC[arow][bcol] << '\n';
-         }
-      }
-   }
-}
-
-void copy_block_to_matrix(double **S, double **D, int brl, int bcl, int bs)
-{
-  for (int row = 0; row < bs; row++)
-  {
-     for (int col = 0; col < bs; col++)
-     {
-        D[brl+row][bcl+col] = S[row][col];
-     }
-  }
 }
