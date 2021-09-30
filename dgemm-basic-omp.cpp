@@ -20,26 +20,29 @@ void square_dgemm(int n, double* A, double* B, double* C)
    // then include LIKWID_MARKER_STOP(MY_MARKER_REGION_NAME)
    // after the matrix multiply code but before the end of the parallel code block.
 
-   double cvalue = 0.0;     // accumulator fo matrix rowXcolumn product
+   //double cvalue = 0.0;     // accumulator fo matrix rowXcolumn product
 
    #pragma omp parallel for collapse(2)
    for (int arow = 0; arow < n; arow++)
    {
       for (int bcol = 0; bcol < n; bcol++)
       {
-         cvalue = 0.0; // initialize accumulator for another product value
-         #pragma omp parallel for reduction (+:cvalue)
+         //cvalue = 0.0; // initialize accumulator for another product value
+         #pragma omp parallel for reduction (+:C[bcol*n+arow])
          for (int k = 0; k < n; k++)
          {
             // accumulated matrix product
             // note that the indexes k and bcol are multiplied by n (the matrix size)
             // this is done to navigate the 1D vector properly 
-            cvalue += A[arow+k*n] * B[bcol*n+k];
+            //cvalue += A[arow+k*n] * B[bcol*n+k];
+            LIKWID_MARKER_START(BASIC_MARKER_REGION);
+            C[bcol*n+arow] += A[arow+k*n] * B[bcol*n+k];
+            LIKWID_MARKER_STOP(BASIC_MARKER_REGION);
          }
          //std::cout << "cvalue = " << cvalue << '\n';   //debug - show mul in action
          //std::cout << "C index is " << bcol*n+arow << '\n'; //debug - show product index - flat memory
          
-         C[bcol*n+arow] += cvalue; // write to product matrix - column major
+         //C[bcol*n+arow] += cvalue; // write to product matrix - column major
       }
    }
 }
