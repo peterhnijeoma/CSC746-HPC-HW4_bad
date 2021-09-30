@@ -9,6 +9,8 @@
 #include <omp.h>
 #include "likwid-stuff.h"
 
+#define BASIC_MARKER_REGION = "Basic_Likwid_mark"
+
 const char* dgemm_desc = "Basic implementation, OpenMP-enabled, three-loop dgemm.";
 
 void square_dgemm(int n, double* A, double* B, double* C) 
