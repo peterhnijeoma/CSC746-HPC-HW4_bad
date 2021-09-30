@@ -71,6 +71,18 @@ void square_dgemm_blocked(int n, int block_size, double* A, double* B, double* C
      CC[i] = new double [n];
   }
 
+  // allocate memory for block matrix copy
+
+  AAA = new double *[block_size];
+  BBB = new double *[block_size];
+  CCC = new double *[block_size];
+  for (int i = 0; i < block_size; i++)
+  {
+     AAA[i] = new double [block_size];
+     BBB[i] = new double [block_size];
+     CCC[i] = new double [block_size];
+  }
+  
   // copy column major vector A, B, and C into 2D arrays AA, BB, and CC respectively 
   for (int k = 0, i = 0; i < n*n; k++, i+=n)
   {
