@@ -9,11 +9,11 @@
 #include <omp.h>
 #include "likwid-stuff.h"
 
-#define BASIC_MARKER_REGION "Basic_Likwid_mark"
+//#define BASIC_MARKER_REGION "Basic_Likwid_mark"
 
-const char* dgemm_desc = "Basic implementation, OpenMP-enabled, three-loop dgemm.";
+const char *dgemm_desc = "Basic implementation, OpenMP-enabled, three-loop dgemm.";
 
-void square_dgemm(int n, double* A, double* B, double* C) 
+void square_dgemm(int n, double *A, double *B, double *C)
 {
    // insert your code here: implementation of basic matrix multiply with OpenMP parallelism enabled
 
@@ -22,29 +22,21 @@ void square_dgemm(int n, double* A, double* B, double* C)
    // then include LIKWID_MARKER_STOP(MY_MARKER_REGION_NAME)
    // after the matrix multiply code but before the end of the parallel code block.
 
-   //double cvalue = 0.0;     // accumulator fo matrix rowXcolumn product
-
-   #pragma omp parallel for
-   for (int arow = 0; arow < n; arow++)
+   #pragma omp parallel
    {
-      for (int bcol = 0; bcol < n; bcol++)
+      #pragma omp for
+      for (int arow = 0; arow < n; arow++)
       {
-         //cvalue = 0.0; // initialize accumulator for another product value
-         //#pragma omp parallel for
-         for (int k = 0; k < n; k++)
+         for (int bcol = 0; bcol < n; bcol++)
          {
-            // accumulated matrix product
-            // note that the indexes k and bcol are multiplied by n (the matrix size)
-            // this is done to navigate the 1D vector properly 
-            //cvalue += A[arow+k*n] * B[bcol*n+k];
-            LIKWID_MARKER_START(BASIC_MARKER_REGION);
-            C[bcol*n+arow] += A[arow+k*n] * B[bcol*n+k];
-            LIKWID_MARKER_STOP(BASIC_MARKER_REGION);
+            //#pragma omp parallel for
+            for (int k = 0; k < n; k++)
+            {
+               //LIKWID_MARKER_START(BASIC_MARKER_REGION);
+               C[bcol * n + arow] += A[arow + k * n] * B[bcol * n + k];
+               //LIKWID_MARKER_STOP(BASIC_MARKER_REGION);
+            }
          }
-         //std::cout << "cvalue = " << cvalue << '\n';   //debug - show mul in action
-         //std::cout << "C index is " << bcol*n+arow << '\n'; //debug - show product index - flat memory
-         
-         //C[bcol*n+arow] += cvalue; // write to product matrix - column major
       }
    }
 }
