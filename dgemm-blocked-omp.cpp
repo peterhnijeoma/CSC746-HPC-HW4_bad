@@ -9,6 +9,8 @@
 #include <omp.h>
 #include "likwid-stuff.h"
 
+#define BLOCKED_MARKER_REGION "Basic_Likwid_mark"
+
 const char* dgemm_desc = "Blocked dgemm, OpenMP-enabled";
 
 void copy_matrix_block(double **S, double **D, int brl, int bcl, int bs)
@@ -94,36 +96,29 @@ void square_dgemm_blocked(int n, int block_size, double* A, double* B, double* C
      }
   }
   
-  //std::cout << "start mm \n";
   // block matrix multiplication logic
-  for (ii = 0; ii < n; ii += block_size)  // partition rows by block size; iterate for n/block_size blocks
+
+  #pragma omp parallel
   {
-    for (jj = 0; jj < n; jj += block_size) // partition columns by block size; iterate for n/block_size blocks
-    {
-      copy_matrix_block(CC, CCC, ii*block_size, jj*block_size, block_size);
-      for (kk = 0; kk < n; kk += block_size)  // for each row and column of blocks
+      #pragma omp for
+      for (ii = 0; ii < n; ii += block_size)  // partition rows by block size; iterate for n/block_size blocks
       {
-        copy_matrix_block(AA, AAA, ii*block_size, kk*block_size, block_size);
-        copy_matrix_block(BB, BBB, kk*block_size, jj*block_size, block_size);
-        // basic matrix multiple applied to matrix blocks
-        matrix_multiply(AAA, BBB, CCC, block_size, block_size);
-      //   for (int arow = ii; arow < ii + block_size; arow++)
-      //   {
-      //     for (int bcol = jj; bcol < jj + block_size; bcol++)
-      //     {
-      //        for (int k = kk; k < kk + block_size; k++)
-      //        {
-      //          //  std::cout << "arow is: " << arow << "; bcol is: " << bcol << "; k is: " << k << '\n';
-      //          //  std::cout << "CC[" << arow << "][" << bcol << "] before is: " << CC[arow][bcol] << '\n';
-      //           CC[arow][bcol] += AA[arow][k] * BB[k][bcol];
-      //          //  std::cout << "CC[" << arow << "][" << bcol << "] after is: " << CC[arow][bcol] << '\n';
-      //        }
-      //     }
-      //   }
+        for (jj = 0; jj < n; jj += block_size) // partition columns by block size; iterate for n/block_size blocks
+        {
+          copy_matrix_block(CC, CCC, ii*block_size, jj*block_size, block_size);
+          for (kk = 0; kk < n; kk += block_size)  // for each row and column of blocks
+          {
+            copy_matrix_block(AA, AAA, ii*block_size, kk*block_size, block_size);
+            copy_matrix_block(BB, BBB, kk*block_size, jj*block_size, block_size);
+            // basic matrix multiple applied to matrix blocks
+            LIKWID_MARKER_START(BLOCKED_MARKER_REGION);
+            matrix_multiply(AAA, BBB, CCC, block_size, block_size);
+            LIKWID_MARKER_STOP(BLOCKED_MARKER_REGION);
+          }
+          // copy block product to produc matrix
+          copy_block_to_matrix(CCC, CC, ii*block_size, jj*block_size, block_size);
+        }
       }
-      // copy block product to produc matrix
-      copy_block_to_matrix(CCC, CC, ii*block_size, jj*block_size, block_size);
-    }
   }
   
   // copy 2d array CC to column major vector C
@@ -145,4 +140,14 @@ void square_dgemm_blocked(int n, int block_size, double* A, double* B, double* C
   delete [] AA;
   delete [] BB;
   delete [] CC;
+
+  for (int i = 0; i < block_size; i++)
+  {
+     delete [] AAA[i];
+     delete [] BBB[i];
+     delete [] CCC[i];
+  }
+  delete [] AAA;
+  delete [] BBB;
+  delete [] CCC;
 }
