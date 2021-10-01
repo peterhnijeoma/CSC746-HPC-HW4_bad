@@ -116,9 +116,11 @@ void square_dgemm_blocked(int n, int block_size, double* A, double* B, double* C
           // copy block product to produc matrix
           copy_block_to_matrix(CCC, CC, ii*block_size, jj*block_size, block_size);
         }
-      }
+      } //end #pragma omp for
       LIKWID_MARKER_STOP(MY_MARKER_REGION_NAME);
-  }
+  } // end #pragma omp parallel
+
+  LIKWID_MARKER_CLOSE;
   
   // copy 2d array CC to column major vector C
   for (int i = 0; i < n; i++)
