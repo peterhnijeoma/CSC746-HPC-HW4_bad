@@ -9,8 +9,6 @@
 #include <omp.h>
 #include "likwid-stuff.h"
 
-#define BASIC_MARKER_REGION "Basic_Likwid_mark"
-
 const char *dgemm_desc = "Basic implementation, OpenMP-enabled, three-loop dgemm.";
 
 void square_dgemm(int n, double *A, double *B, double *C)
@@ -24,22 +22,18 @@ void square_dgemm(int n, double *A, double *B, double *C)
 
    #pragma omp parallel
    {
+      LIKWID_MARKER_START(MY_MARKER_REGION_NAME);
       #pragma omp for
       for (int arow = 0; arow < n; arow++)
       {
-         LIKWID_MARKER_START(BASIC_MARKER_REGION);
          for (int bcol = 0; bcol < n; bcol++)
          {
-            //LIKWID_MARKER_START(BASIC_MARKER_REGION);
             for (int k = 0; k < n; k++)
             {
-               //LIKWID_MARKER_START(BASIC_MARKER_REGION);
                C[bcol * n + arow] += A[arow + k * n] * B[bcol * n + k];
-               //LIKWID_MARKER_STOP(BASIC_MARKER_REGION);
             }
-            //LIKWID_MARKER_STOP(BASIC_MARKER_REGION);
          }
-         LIKWID_MARKER_STOP(BASIC_MARKER_REGION);
       } // end #pragma omp for
+      LIKWID_MARKER_STOP(MY_MARKER_REGION_NAME);
    } // end #pragma omp parallel
 }

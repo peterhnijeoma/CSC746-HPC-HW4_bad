@@ -1,15 +1,14 @@
 /* This routine performs a dgemm operation
  *  C := C + A * B
  * where A, B, and C are n-by-n matrices stored in column-major format.
- * On exit, A and B maintain their input values. */
+ * On exit, A and B maintain their input values.
+ *  */
 
 #include <iostream>
 #include <string.h>
 #include <stdlib.h>
 #include <omp.h>
 #include "likwid-stuff.h"
-
-#define BLOCKED_MARKER_REGION "Basic_Likwid_mark"
 
 const char* dgemm_desc = "Blocked dgemm, OpenMP-enabled";
 
@@ -100,6 +99,7 @@ void square_dgemm_blocked(int n, int block_size, double* A, double* B, double* C
 
   #pragma omp parallel
   {
+      LIKWID_MARKER_START(MY_MARKER_REGION_NAME);
       #pragma omp for
       for (ii = 0; ii < n; ii += block_size)  // partition rows by block size; iterate for n/block_size blocks
       {
@@ -111,14 +111,13 @@ void square_dgemm_blocked(int n, int block_size, double* A, double* B, double* C
             copy_matrix_block(AA, AAA, ii*block_size, kk*block_size, block_size);
             copy_matrix_block(BB, BBB, kk*block_size, jj*block_size, block_size);
             // basic matrix multiple applied to matrix blocks
-            LIKWID_MARKER_START(BLOCKED_MARKER_REGION);
             matrix_multiply(AAA, BBB, CCC, block_size, block_size);
-            LIKWID_MARKER_STOP(BLOCKED_MARKER_REGION);
           }
           // copy block product to produc matrix
           copy_block_to_matrix(CCC, CC, ii*block_size, jj*block_size, block_size);
         }
       }
+      LIKWID_MARKER_STOP(MY_MARKER_REGION_NAME);
   }
   
   // copy 2d array CC to column major vector C
