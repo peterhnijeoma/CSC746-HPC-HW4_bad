@@ -23,7 +23,7 @@ void copy_matrix_block(double **S, double **D, int brl, int bcl, int bs)
   }
 }
 
-void matrix_multiply(double **AA, double **BB, double **PROD, int num_rows, int num_cols)
+void matrix_multiply(double **AS, double **BS, double **PROD, int num_rows, int num_cols)
 {
    for (int row = 0; row < num_rows; row++)
    {
@@ -31,7 +31,7 @@ void matrix_multiply(double **AA, double **BB, double **PROD, int num_rows, int 
       {
          for (int k = 0; k < num_cols; k++)
          {
-            PROD[row][col] += AA[row][k] * BB[k][col];
+            PROD[row][col] += AS[row][k] * BS[k][col];
          }
       }
    }
@@ -99,7 +99,9 @@ void square_dgemm_blocked(int n, int block_size, double* A, double* B, double* C
 
   #pragma omp parallel
   {
+#ifdef LIKWID_PERFMON
       LIKWID_MARKER_START(MY_MARKER_REGION_NAME);
+#endif
       #pragma omp for
       for (ii = 0; ii < n; ii += block_size)  // partition rows by block size; iterate for n/block_size blocks
       {
@@ -117,10 +119,10 @@ void square_dgemm_blocked(int n, int block_size, double* A, double* B, double* C
           copy_block_to_matrix(CCC, CC, ii*block_size, jj*block_size, block_size);
         }
       } //end #pragma omp for
+#ifdef LIKWID_PERFMON
       LIKWID_MARKER_STOP(MY_MARKER_REGION_NAME);
+#endif
   } // end #pragma omp parallel
-
-  LIKWID_MARKER_CLOSE;
   
   // copy 2d array CC to column major vector C
   for (int i = 0; i < n; i++)
